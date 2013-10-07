@@ -10,9 +10,8 @@
     <string name="stopwatch_title">Stopwatch</string>
     <string name="countdown_title">Countdown</string>
     <string name="tabata_title">Tabata</string>
-    <string name="stop">stop</string>
-    <string name="start">start</string>
-    <string name="start_caps">START</string>
+    <string name="stop">STOP</string>
+    <string name="start">START</string>
     <string name="emom_title">How many rounds?</string>
     <string name="one">1</string>
     <string name="two">2</string>
@@ -26,8 +25,8 @@
     <string name="zero">0</string>
     <string name="backspace"><![CDATA[<]]></string>
     <string name="emom_timer_label"></string>
-    <string name="stop_caps">STOP</string>
     <string name="tabata_rest_timer">Rest :10</string>
     <string name="tabata_work_timer">Work :20</string>
     <string name="tabata_info">8 Rounds - 4 Mins Total</string>
+    <string name="time_is_up">Time\'s up!</string>
 </resources>

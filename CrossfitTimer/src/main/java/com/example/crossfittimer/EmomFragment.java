@@ -1,6 +1,7 @@
 package com.example.crossfittimer;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -12,8 +13,6 @@ import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
 import java.util.ArrayList;
 
 /**
@@ -23,18 +22,21 @@ public class EmomFragment extends Fragment implements View.OnClickListener {
 
 
     private static final String KEY_POSITION = "position";
-    private static final String STATE_TIMER = "timer";
+    private static final String STATE_EMOM_TIMER = "emom_timer";
+    private static final String STATE_COUNTDOWN_TIMER = "countdown_timer";
 
-    private static int numRounds = 0;
-    private static long timeRemaining = 0;
-    private static boolean isTimerStarted = false;
-    private static CountDownTimer countDownTimer;
+    private int numRounds = 0;
+    private int currentRound = 0;
+    private long timeRemaining = 0;
+    private long countdownTimeRemaining = CrossfitUtils.COUNTDOWN_SECONDS * 1000;
+    private boolean isTimerStarted = false;
+    private CountDownTimer countDownTimer;
 
     private TextView emomTitle;
     private Button numpad0, numpad1, numpad2, numpad3, numpad4, numpad5, numpad6, numpad7, numpad8, numpad9;
     private ArrayList<Button> numpadButtons = new ArrayList<Button>();
     private Button backspace;
-    private Button start;
+    private Button startStopBtn;
     private TextView timer;
 
     static EmomFragment newInstance(int position) {
@@ -63,67 +65,15 @@ public class EmomFragment extends Fragment implements View.OnClickListener {
             }
         }
 
-        final Button startButton = (Button) result.findViewById(R.id.start_stop_button);
+        startStopBtn.setOnClickListener(this);
 
-        startButton.setOnClickListener( new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (numRounds == 0) {
-                    return;
-                }
-
-                // TODO no magic numbers
-                if (timeRemaining == 0 && !isTimerStarted) {
-                    timeRemaining = numRounds * 60 * 1000;
-                }
-
-                if (isTimerStarted) {
-
-                    // Stop button pressed
-                    countDownTimer.onFinish();
-                    isTimerStarted = false;
-                    timeRemaining = 0;
-                    timer.setText(R.string.emom_timer_label);
-                    startButton.setText(R.string.start);
-                } else {
-
-                    // Start button pressed
-                    isTimerStarted = true;
-                    startButton.setText(R.string.stop_caps);
-
-                    for (Button button : numpadButtons) {
-                        button.setEnabled(false);
-                        button.setTextColor(Color.LTGRAY);
-                    }
-
-                    countDownTimer = new CountDownTimer(timeRemaining, 1000) {
-                        public void onTick(long millisUntilFinished) {
-                            int minutesLeft = (int) millisUntilFinished / 60000;
-                            int secondsLeft = (int) (millisUntilFinished % 60000 / 1000);
-
-                            updateTimer(minutesLeft, secondsLeft);
-                            timeRemaining = millisUntilFinished;
-                        }
-
-                        public void onFinish() {
-                            for (Button button : numpadButtons) {
-                                button.setEnabled(true);
-                                button.setTextColor(Color.BLACK);
-                            }
-                            timeRemaining = 0;
-                            timer.setText("Time's up!");
-                            this.cancel();
-                        }
-                    }.start();
-                }
-
-            }
-        });
 
         if (savedInstanceState != null) {
-            timeRemaining = savedInstanceState.getLong(STATE_TIMER);
+            timeRemaining = savedInstanceState.getLong(STATE_EMOM_TIMER);
+            countdownTimeRemaining = savedInstanceState.getLong(STATE_COUNTDOWN_TIMER);
             if (timeRemaining > 0) {
-                startButton.performClick();
+                isTimerStarted = true;
+                emomTimerStartStop();
             }
         }
 
@@ -154,12 +104,17 @@ public class EmomFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putLong(STATE_TIMER, timeRemaining);
+        savedInstanceState.putLong(STATE_EMOM_TIMER, timeRemaining);
+        savedInstanceState.putLong(STATE_COUNTDOWN_TIMER, countdownTimeRemaining);
     }
 
 
     public void onClick(View view) {
         switch (view.getId()) {
+            case R.id.start_stop_button:
+                isTimerStarted = !isTimerStarted;
+                emomTimerStartStop();
+                break;
             case R.id.numpad_0:
                 numpadPressed(0);
                 break;
@@ -199,11 +154,95 @@ public class EmomFragment extends Fragment implements View.OnClickListener {
                         emomTitle.setText(Integer.toString(numRounds) + " Rounds");
                     }
                 } else {
-                    emomTitle.setText("Enter number of rounds below");
+                    emomTitle.setText(R.string.emom_title);
                 }
                 break;
 
         }
+    }
+
+    private void emomTimerStartStop() {
+
+        if (isTimerStarted) {
+
+            // Timer just started, set the time remaining according to the number of rounds
+            if (timeRemaining == 0) {
+                currentRound = 0;
+                countdownTimeRemaining = CrossfitUtils.COUNTDOWN_SECONDS * 1000;
+                timeRemaining = numRounds * CrossfitUtils.SECONDS_IN_MINUTE * CrossfitUtils.MILLISECONDS_IN_SECOND;
+            }
+
+            // Start timer
+            startStopBtn.setText(R.string.stop);
+
+            for (Button button : numpadButtons) {
+                button.setEnabled(false);
+                button.setTextColor(Color.LTGRAY);
+            }
+
+            if (countdownTimeRemaining == 0) {
+                startEmomTimer();
+            } else {
+                countdownBeforeStart();
+            }
+        } else {
+
+            // Stop timer
+            countDownTimer.onFinish();
+            timer.setText("");
+            startStopBtn.setText(R.string.start);
+        }
+    }
+
+
+    private void countdownBeforeStart() {
+
+        countDownTimer = new CountDownTimer(countdownTimeRemaining, 1000) {
+            public void onTick(long millisUntilFinished) {
+                int minutesLeft = (int) millisUntilFinished / 60000;
+                int secondsLeft = (int) (millisUntilFinished % 60000 / 1000);
+
+                updateTimer(minutesLeft, secondsLeft);
+                countdownTimeRemaining = millisUntilFinished;
+            }
+
+            public void onFinish() {
+                this.cancel();
+                countdownTimeRemaining = 0;
+                startEmomTimer();
+            }
+        }.start();
+    }
+
+
+    private void startEmomTimer() {
+        countDownTimer = new CountDownTimer(timeRemaining, 1000) {
+            public void onTick(long millisUntilFinished) {
+                int minutesLeft = (int) millisUntilFinished / 60000;
+                int secondsLeft = (int) (millisUntilFinished % 60000 / 1000);
+
+                if (secondsLeft % 60 == 0) {
+                    currentRound++;
+                    emomTitle.setText("Round " + currentRound + " of " + numRounds);
+                }
+
+                updateTimer(minutesLeft, secondsLeft);
+                timeRemaining = millisUntilFinished;
+            }
+
+            public void onFinish() {
+                timer.setText(R.string.time_is_up);
+
+                for (Button button : numpadButtons) {
+                    button.setEnabled(true);
+                    button.setTextColor(Color.BLACK);
+                }
+
+                timeRemaining = 0;
+                startStopBtn.setText(R.string.start);
+                this.cancel();
+            }
+        }.start();
     }
 
 
@@ -248,7 +287,7 @@ public class EmomFragment extends Fragment implements View.OnClickListener {
         numpad8 = (Button) layout.findViewById(R.id.numpad_8);
         numpad9 = (Button) layout.findViewById(R.id.numpad_9);
         backspace = (Button) layout.findViewById(R.id.numpad_backspace);
-        start = (Button) layout.findViewById(R.id.start_stop_button);
+        startStopBtn = (Button) layout.findViewById(R.id.start_stop_button);
     }
 
 }

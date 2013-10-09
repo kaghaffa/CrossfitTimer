@@ -8,6 +8,11 @@
         android:minSdkVersion="11"
         android:targetSdkVersion="16" />
 
+    <instrumentation
+        android:targetPackage="com.example.crossfittimer"
+        android:name="android.test.InstrumentationTestRunner"
+        />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"

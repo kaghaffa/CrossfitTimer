@@ -11,7 +11,7 @@
               android:layout_height="wrap_content"
               android:text="@string/timer_label"
               android:fontFamily="sans-serif-condensed"
-              android:textSize="68sp"
+              android:textSize="72sp"
               android:gravity="center"
               android:layout_marginTop="100dp"
               android:layout_gravity="center_vertical"

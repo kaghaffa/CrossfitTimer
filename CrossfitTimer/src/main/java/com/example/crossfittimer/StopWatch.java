@@ -92,6 +92,10 @@ public class StopWatch {
     }
 
 
+    public void setPauseTime(long pauseTime) {
+        this.pauseTime = pauseTime;
+    }
+
     public long getStartTime() {
         return startTime;
     }

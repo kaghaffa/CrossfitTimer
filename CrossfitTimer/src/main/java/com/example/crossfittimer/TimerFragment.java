@@ -16,6 +16,8 @@ import android.widget.TextView;
 public class TimerFragment extends Fragment implements View.OnClickListener{
 
 
+    private static final String STATE_IS_WATCH_RUNNING = "isWatchStarted";
+    private static final String STATE_ELAPSED_TIME = "elapsedTime";
     private Handler handler = new Handler();
 
     private static final String KEY_POSITION = "position";
@@ -46,6 +48,20 @@ public class TimerFragment extends Fragment implements View.OnClickListener{
         resetButton = (Button) result.findViewById(R.id.reset_button);
         startStopButton.setOnClickListener(this);
         resetButton.setOnClickListener(this);
+
+        if (savedInstanceState != null) {
+            boolean isTimerRunning = savedInstanceState.getBoolean(STATE_IS_WATCH_RUNNING);
+
+            long elapsedTime = savedInstanceState.getLong(STATE_ELAPSED_TIME);
+            stopWatch.setPauseTime(elapsedTime);
+
+            if (isTimerRunning) {
+                startStopTimer();
+            } else {
+                stopWatchTextView.setText(stopWatch.getTimeAsString());
+            }
+        }
+
         return result;
     }
 
@@ -58,20 +74,25 @@ public class TimerFragment extends Fragment implements View.OnClickListener{
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.start_stop_button:
-                if (stopWatch.isRunning()) {
-                    stopWatch.stop();
-                    startStopButton.setText(R.string.start);
-                    handler.removeCallbacks(updateTime);
-                } else {
-                    stopWatch.start();
-                    startStopButton.setText(R.string.stop);
-                    handler.postDelayed(updateTime, 0);
-                }
+                startStopTimer();
                 break;
             case R.id.reset_button:
                 stopWatch.reset();
                 stopWatchTextView.setText(stopWatch.getTimeAsString());
                 break;
+        }
+    }
+
+
+    private void startStopTimer() {
+        if (stopWatch.isRunning()) {
+            stopWatch.stop();
+            startStopButton.setText(R.string.start);
+            handler.removeCallbacks(updateTime);
+        } else {
+            stopWatch.start();
+            startStopButton.setText(R.string.stop);
+            handler.postDelayed(updateTime, 0);
         }
     }
 
@@ -82,4 +103,10 @@ public class TimerFragment extends Fragment implements View.OnClickListener{
             handler.postDelayed(this, 0);
         }
     };
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean(STATE_IS_WATCH_RUNNING, stopWatch.isRunning());
+        savedInstanceState.putLong(STATE_ELAPSED_TIME, stopWatch.getElapsedTime());
+    }
 }
